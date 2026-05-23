@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hello Kitty & Friends — Card Tracker</title>
+  <style>
+    :root {
+      --pink:      #f72585;
+      --pink-light:#ffd6e7;
+      --pink-mid:  #ff85b3;
+      --bg:        #fff5f8;
+      --surface:   #ffffff;
+      --border:    #ffc2d8;
+      --text:      #3a1a2e;
+      --muted:     #9e7a8c;
+      --green:     #06d6a0;
+      --radius:    10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #f72585 0%, #b5179e 60%, #7209b7 100%);
+      color: white;
+      padding: 20px 16px 16px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(183,9,126,.35);
+    }
+    header h1 {
+      font-size: clamp(1.1rem, 4vw, 1.6rem);
+      font-weight: 800;
+      letter-spacing: -.5px;
+    }
+    header p { font-size: .8rem; opacity: .88; margin-top: 2px; }
+
+    /* ── Progress ── */
+    .progress-wrap {
+      background: rgba(255,255,255,.2);
+      border-radius: 999px;
+      height: 10px;
+      margin: 10px 0 6px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--green);
+      border-radius: 999px;
+      transition: width .4s ease;
+    }
+    .progress-label {
+      font-size: .82rem;
+      font-weight: 700;
+    }
+
+    /* ── Filters ── */
+    .controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 108px;
+      z-index: 99;
+    }
+    .btn {
+      padding: 7px 16px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: white;
+      color: var(--text);
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .18s;
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: var(--pink); color: var(--pink); }
+    .btn.active { background: var(--pink); color: white; border-color: var(--pink); }
+    .btn-reset {
+      border-color: #ffb3c6;
+      color: #c9184a;
+    }
+    .btn-reset:hover { background: #c9184a; color: white; border-color: #c9184a; }
+
+    /* ── Main layout ── */
+    main { padding: 16px; max-width: 900px; margin: 0 auto; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 24px; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-header h2 {
+      font-size: .85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--pink);
+    }
+    .section-badge {
+      font-size: .72rem;
+      background: var(--pink-light);
+      color: var(--pink);
+      border-radius: 999px;
+      padding: 2px 9px;
+      font-weight: 700;
+    }
+    .section-type {
+      font-size: .68rem;
+      background: #f3e8ff;
+      color: #7209b7;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-weight: 600;
+    }
+    .section-chevron {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: .9rem;
+      transition: transform .2s;
+    }
+    .section-chevron.open { transform: rotate(180deg); }
+
+    /* ── Card grid ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+      gap: 8px;
+    }
+
+    /* ── Card tile ── */
+    .card-tile {
+      aspect-ratio: 1;
+      border-radius: var(--radius);
+      border: 2px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all .15s ease;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .card-tile:hover {
+      border-color: var(--pink-mid);
+      transform: scale(1.06);
+      box-shadow: 0 4px 12px rgba(247,37,133,.18);
+    }
+    .card-tile:active { transform: scale(.96); }
+    .card-num {
+      font-size: clamp(.65rem, 2vw, .8rem);
+      font-weight: 800;
+      color: var(--muted);
+      line-height: 1;
+    }
+
+    /* Collected state */
+    .card-tile.collected {
+      background: var(--pink-light);
+      border-color: var(--pink);
+    }
+    .card-tile.collected .card-num { color: var(--pink); }
+    .card-tile.collected::after {
+      content: "";
+      position: absolute;
+      top: 4px; right: 4px;
+      width: 8px; height: 8px;
+      background: var(--pink);
+      border-radius: 50%;
+    }
+
+    /* Hidden state for filters */
+    .card-tile.hidden { display: none; }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--muted);
+      font-size: .9rem;
+      display: none;
+    }
+    .empty.visible { display: block; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 24px 16px;
+      font-size: .72rem;
+      color: var(--muted);
+    }
+
+    /* ── Confirmation toast ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #3a1a2e;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-size: .82rem;
+      font-weight: 600;
+      transition: transform .3s ease;
+      z-index: 999;
+      pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 380px) {
+      .card-grid { grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Hello Kitty &amp; Friends — Card Tracker</h1>
+  <p>Tap a card to mark it as collected</p>
+  <div class="progress-wrap">
+    <div class="progress-bar" id="progressBar" style="width:0%"></div>
+  </div>
+  <div class="progress-label" id="progressLabel">0 / 209 collected</div>
+</header>
+
+<div class="controls">
+  <button class="btn active" data-filter="all">All (209)</button>
+  <button class="btn" data-filter="collected" id="btnCollected">Collected (0)</button>
+  <button class="btn" data-filter="needed"   id="btnNeeded">Needed (209)</button>
+  <button class="btn btn-reset" id="btnReset">Reset all</button>
+</div>
+
+<main id="main"></main>
+<div class="empty" id="empty">Nothing to show here yet!</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>Data saved locally in your browser &bull; 209 cards total</footer>
+
+<script>
+// ─── Card data ──────────────────────────────────────────────────────────────
+// Each section: { name, type, cards: [start, end] or [[s1,e1],[s2,e2]] }
+const SECTIONS = [
+  { name: "Hello Kitty",          type: "Base",          range: [[1,9]] },
+  { name: "My Melody",            type: "Base",          range: [[10,18]] },
+  { name: "Kuromi",               type: "Base",          range: [[19,27]] },
+  { name: "Best Friends",         type: "Rainbow",       range: [[28,36]] },
+  { name: "Room Tour",            type: "Base",          range: [[37,45]] },
+  { name: "Let's Dance!",         type: "Base",          range: [[46,54]] },
+  { name: "Travel and Fun",       type: "Base",          range: [[55,63]] },
+  { name: "Road Trip",            type: "Rainbow",       range: [[64,72]] },
+  { name: "At the Seaside",       type: "Base",          range: [[73,81]] },
+  { name: "Nautical Cuties",      type: "Base",          range: [[82,90]] },
+  { name: "Space Friends",        type: "Base",          range: [[91,99]] },
+  { name: "Golden Glitter Friends", type: "Golden Glitter", range: [[100,108]] },
+  { name: "Play Together",        type: "Glitter",       range: [[109,117]] },
+  { name: "Kawaii Gashapon",      type: "Crystal Shine", range: [[118,126]] },
+  { name: "Pop Party",            type: "Crystal Shine", range: [[127,135]] },
+  { name: "Balloon Parade",       type: "Crystal Shine", range: [[136,144]] },
+  { name: "Babies",               type: "Base",          range: [[145,153],[181,189]] },
+  { name: "My Favourite Day",     type: "Crystal Shine", range: [[154,162]] },
+  { name: "Make-Up",              type: "Crystal Shine", range: [[163,171]] },
+  { name: "Unicorn Dreams",       type: "Golden Glitter", range: [[172,180],[208,209]] },
+  { name: "Cotton Candy Crew",    type: "Golden Glitter", range: [[190,207]] },
+];
+
+// Expand ranges into sorted card number arrays
+function expandRange(ranges) {
+  const cards = [];
+  for (const [s, e] of ranges) for (let i = s; i <= e; i++) cards.push(i);
+  return cards;
+}
+
+// ─── State ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = "hkf_collected_v1";
+let collected = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"));
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...collected]));
+}
+
+// ─── Render ─────────────────────────────────────────────────────────────────
+const TYPE_COLOR = {
+  "Base":           "#e2e8f0",
+  "Rainbow":        "#fde8ff",
+  "Glitter":        "#e8f4fd",
+  "Crystal Shine":  "#fef9e7",
+  "Golden Glitter": "#fef3c7",
+};
+
+let currentFilter = "all";
+let sectionCollapsed = {}; // track collapsed state
+
+function render() {
+  const main = document.getElementById("main");
+  main.innerHTML = "";
+
+  for (const sec of SECTIONS) {
+    const cards = expandRange(sec.range);
+    const secCollected = cards.filter(n => collected.has(n)).length;
+
+    const div = document.createElement("div");
+    div.className = "section";
+    div.dataset.section = sec.name;
+
+    const isOpen = !sectionCollapsed[sec.name];
+
+    div.innerHTML = `
+      <div class="section-header" data-name="${sec.name}">
+        <h2>${sec.name}</h2>
+        <span class="section-badge">${secCollected}/${cards.length}</span>
+        <span class="section-type" style="background:${TYPE_COLOR[sec.type]||'#f3e8ff'}">${sec.type}</span>
+        <span class="section-chevron ${isOpen ? 'open' : ''}" aria-hidden>&#9650;</span>
+      </div>
+      <div class="card-grid" ${isOpen ? '' : 'style="display:none"'}>
+        ${cards.map(n => `
+          <div class="card-tile ${collected.has(n) ? 'collected' : ''}"
+               data-card="${n}" title="Card #${n}">
+            <span class="card-num">${n}</span>
+          </div>`).join('')}
+      </div>`;
+
+    main.appendChild(div);
+
+    // Section header toggle
+    div.querySelector(".section-header").addEventListener("click", () => {
+      sectionCollapsed[sec.name] = !sectionCollapsed[sec.name];
+      const grid = div.querySelector(".card-grid");
+      const chev = div.querySelector(".section-chevron");
+      const isNowOpen = !sectionCollapsed[sec.name];
+      grid.style.display = isNowOpen ? "" : "none";
+      chev.classList.toggle("open", isNowOpen);
+    });
+
+    // Card clicks
+    div.querySelectorAll(".card-tile").forEach(tile => {
+      tile.addEventListener("click", e => {
+        e.stopPropagation();
+        const n = +tile.dataset.card;
+        if (collected.has(n)) { collected.delete(n); tile.classList.remove("collected"); }
+        else                   { collected.add(n);    tile.classList.add("collected"); }
+        save();
+        updateStats();
+        applyFilter();
+        showToast(collected.has(n) ? `Card #${n} collected!` : `Card #${n} removed`);
+      });
+    });
+  }
+
+  applyFilter();
+  updateStats();
+}
+
+// ─── Filter ─────────────────────────────────────────────────────────────────
+function applyFilter() {
+  document.querySelectorAll(".card-tile").forEach(tile => {
+    const n = +tile.dataset.card;
+    const show =
+      currentFilter === "all" ||
+      (currentFilter === "collected" && collected.has(n)) ||
+      (currentFilter === "needed"    && !collected.has(n));
+    tile.classList.toggle("hidden", !show);
+  });
+
+  // Hide sections that have no visible cards
+  document.querySelectorAll(".section").forEach(sec => {
+    const visible = [...sec.querySelectorAll(".card-tile")].some(t => !t.classList.contains("hidden"));
+    sec.style.display = visible ? "" : "none";
+  });
+
+  const anyVisible = [...document.querySelectorAll(".card-tile")].some(t => !t.classList.contains("hidden"));
+  document.getElementById("empty").classList.toggle("visible", !anyVisible);
+}
+
+// ─── Stats ──────────────────────────────────────────────────────────────────
+const TOTAL = 209;
+function updateStats() {
+  const n = collected.size;
+  const pct = (n / TOTAL * 100).toFixed(1);
+  document.getElementById("progressBar").style.width = pct + "%";
+  document.getElementById("progressLabel").textContent = `${n} / ${TOTAL} collected (${pct}%)`;
+  document.getElementById("btnCollected").textContent = `Collected (${n})`;
+  document.getElementById("btnNeeded").textContent = `Needed (${TOTAL - n})`;
+
+  // Update section badges
+  for (const sec of SECTIONS) {
+    const secEl = document.querySelector(`.section[data-section="${sec.name}"]`);
+    if (!secEl) continue;
+    const cards = expandRange(sec.range);
+    const cnt = cards.filter(c => collected.has(c)).length;
+    const badge = secEl.querySelector(".section-badge");
+    if (badge) badge.textContent = `${cnt}/${cards.length}`;
+  }
+}
+
+// ─── Filter buttons ─────────────────────────────────────────────────────────
+document.querySelectorAll("[data-filter]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    currentFilter = btn.dataset.filter;
+    document.querySelectorAll("[data-filter]").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    applyFilter();
+  });
+});
+
+// ─── Reset ──────────────────────────────────────────────────────────────────
+document.getElementById("btnReset").addEventListener("click", () => {
+  if (!confirm("Reset all collected cards? This cannot be undone.")) return;
+  collected.clear();
+  save();
+  render();
+  showToast("All cards reset");
+});
+
+// ─── Toast ──────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+// ─── Init ───────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
