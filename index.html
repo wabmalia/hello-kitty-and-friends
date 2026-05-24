@@ -51,8 +51,6 @@
       height: 8px;
       margin-top: 10px;
       overflow: hidden;
-      flex: 1;
-      min-width: 100px;
     }
     .progress-bar { height: 100%; background: var(--green); border-radius: 999px; transition: width .4s ease; }
     .progress-label { font-size: .78rem; opacity: .9; margin-top: 5px; font-weight: 600; }
@@ -66,7 +64,7 @@
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       position: sticky;
-      top: 84px;
+      top: 78px;
       z-index: 150;
       align-items: center;
     }
@@ -88,72 +86,58 @@
     .btn-reset:hover { background: #c9184a; color: white; border-color: #c9184a; }
     .count-label { font-size: .75rem; color: var(--muted); font-weight: 600; }
 
-    /* ── Panels ── */
-    .panels { padding: 12px; display: flex; flex-direction: column; gap: 16px; }
-
-    .panel {
-      background: var(--surface);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      overflow: hidden;
-    }
-    .panel-title {
-      background: linear-gradient(90deg, #ffd6e7, #f8e1ff);
-      padding: 6px 14px;
-      font-size: .72rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .09em;
-      color: var(--pink);
-      border-bottom: 1px solid var(--border);
-    }
-    .panel-scroll {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 10px 12px 12px;
-    }
-    .panel-row {
+    /* ── Sections container ── */
+    .sections {
       display: flex;
-      gap: 6px;
-      align-items: flex-start;
-      min-width: max-content;
+      flex-wrap: wrap;
+      gap: 24px;
+      padding: 20px 16px;
+      justify-content: center;
     }
 
-    /* Divider between left and right halves */
-    .half-divider {
-      width: 2px;
-      background: var(--border);
-      border-radius: 2px;
-      align-self: stretch;
-      margin: 0 6px;
-      flex-shrink: 0;
-    }
-
-    /* ── Section column ── */
-    .sec-col {
+    /* ── Section card ── */
+    .sec-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 10px 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+    }
+
+    .sec-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
     }
     .sec-name {
-      font-size: .62rem;
+      font-size: .65rem;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: .07em;
       color: var(--muted);
       text-align: center;
-      max-width: calc(var(--card-w) * 3 + 8px);
     }
     .sec-badge {
       font-size: .58rem;
       background: var(--pink-light);
       color: var(--pink);
-      padding: 1px 7px;
+      padding: 2px 8px;
       border-radius: 999px;
       font-weight: 700;
     }
-    .sec-header { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+
+    /* Row of grids inside a section (for large sections like Cotton Candy Crew) */
+    .sec-grids {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
 
     /* ── 3×3 card grid ── */
     .card-grid {
@@ -161,10 +145,6 @@
       grid-template-columns: repeat(3, var(--card-w));
       grid-template-rows: repeat(3, var(--card-h));
       gap: 4px;
-    }
-    /* Last section in lower panel may have fewer than 9 cards */
-    .card-grid.partial {
-      grid-template-rows: repeat(3, var(--card-h));
     }
 
     /* ── Card tile ── */
@@ -209,6 +189,14 @@
       border-top: 1px solid var(--border);
     }
 
+    /* Skeleton (empty placeholder) */
+    .card-tile.skeleton {
+      border: 2px dashed var(--border);
+      background: #fdf0f5;
+      cursor: default;
+      pointer-events: none;
+    }
+
     /* Collected */
     .card-tile.collected {
       border-color: var(--pink);
@@ -244,13 +232,6 @@
       text-align: center;
     }
 
-    /* Empty slot (for partial sections) */
-    .card-tile.empty {
-      visibility: hidden;
-      pointer-events: none;
-      border-color: transparent;
-    }
-
     /* Hidden for filter */
     .card-tile.filtered { opacity: .12; pointer-events: none; }
 
@@ -275,19 +256,6 @@
 
     /* ── Footer ── */
     footer { text-align: center; padding: 20px 16px; font-size: .7rem; color: var(--muted); }
-
-    /* Scroll hint on mobile */
-    @media (max-width: 700px) {
-      .panel-scroll::after {
-        content: "← scroll →";
-        display: block;
-        text-align: center;
-        font-size: .62rem;
-        color: var(--muted);
-        padding-top: 6px;
-        opacity: .7;
-      }
-    }
   </style>
 </head>
 <body>
@@ -295,9 +263,9 @@
 <header>
   <div class="header-top">
     <h1>Hello Kitty &amp; Friends — Card Tracker</h1>
-    <div class="progress-wrap">
-      <div class="progress-bar" id="progressBar" style="width:0%"></div>
-    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar" id="progressBar" style="width:0%"></div>
   </div>
   <div class="progress-label" id="progressLabel">0 / 209 collected</div>
 </header>
@@ -310,7 +278,7 @@
   <button class="btn btn-reset" id="btnReset">Reset all</button>
 </div>
 
-<div class="panels" id="panels"></div>
+<div class="sections" id="sections"></div>
 
 <footer>Tap any card to mark as collected &bull; Saved in your browser &bull; 209 cards total</footer>
 
@@ -318,61 +286,29 @@
 
 <script>
 // ── Data ──────────────────────────────────────────────────────────────────
-const PANELS = [
-  {
-    label: "Base &amp; Rainbow — Characters / Scenes",
-    left: [
-      { name: "Hello Kitty",             type: "Base",          start: 1   },
-      { name: "My Melody",               type: "Base",          start: 10  },
-      { name: "Kuromi",                  type: "Base",          start: 19  },
-      { name: "Best Friends",            type: "Rainbow",       start: 28  },
-    ],
-    right: [
-      { name: "Play Together",           type: "Glitter",       start: 109 },
-      { name: "Kawaii Gashapon",         type: "Crystal Shine", start: 118 },
-      { name: "Pop Party",               type: "Crystal Shine", start: 127 },
-      { name: "Balloon Parade",          type: "Crystal Shine", start: 136 },
-    ],
-  },
-  {
-    label: "Base &amp; Rainbow — Adventures",
-    left: [
-      { name: "Room Tour",               type: "Base",          start: 37  },
-      { name: "Let's Dance!",            type: "Base",          start: 46  },
-      { name: "Travel and Fun",          type: "Base",          start: 55  },
-      { name: "Road Trip",               type: "Rainbow",       start: 64  },
-    ],
-    right: [
-      { name: "Babies",                  type: "Base",          start: 145 },
-      { name: "My Favourite Day",        type: "Crystal Shine", start: 154 },
-      { name: "Make-Up",                 type: "Crystal Shine", start: 163 },
-      { name: "Unicorn Dreams",          type: "Golden Glitter",start: 172 },
-    ],
-  },
-  {
-    label: "Base — Ocean &amp; Space · Golden Glitter",
-    left: [
-      { name: "At the Seaside",          type: "Base",          start: 73  },
-      { name: "Nautical Cuties",         type: "Base",          start: 82  },
-      { name: "Space Friends",           type: "Base",          start: 91  },
-      { name: "Golden Glitter Friends",  type: "Golden Glitter",start: 100 },
-    ],
-    right: [
-      { name: "Babies (cont.)",          type: "Base",          start: 181 },
-      { name: "Cotton Candy Crew",       type: "Golden Glitter",start: 190 },
-      { name: "Cotton Candy Crew",       type: "Golden Glitter",start: 199 },
-      { name: "Unicorn Dreams",          type: "Golden Glitter",start: 208 },
-    ],
-  },
+const SECTIONS = [
+  { name: "Hello Kitty",            start: 1,   count: 9  },
+  { name: "My Melody",              start: 10,  count: 9  },
+  { name: "Kuromi",                 start: 19,  count: 9  },
+  { name: "Best Friends",           start: 28,  count: 9  },
+  { name: "Room Tour",              start: 37,  count: 9  },
+  { name: "Let's Dance!",           start: 46,  count: 9  },
+  { name: "Travel And Fun",         start: 55,  count: 9  },
+  { name: "Road Trip",              start: 64,  count: 9  },
+  { name: "At The Seaside",         start: 73,  count: 9  },
+  { name: "Nautical Cuties",        start: 82,  count: 9  },
+  { name: "Space Friends",          start: 91,  count: 9  },
+  { name: "Golden Glitter Friends", start: 100, count: 9  },
+  { name: "Play Together",          start: 109, count: 9  },
+  { name: "Kawaii Gashapon",        start: 118, count: 9  },
+  { name: "Pop Party",              start: 127, count: 9  },
+  { name: "Balloon Parade",         start: 136, count: 9  },
+  { name: "Babies",                 start: 145, count: 9  },
+  { name: "My Favourite Day",       start: 154, count: 9  },
+  { name: "Make-up",                start: 163, count: 9  },
+  { name: "Unicorn Dreams",         start: 172, count: 9  },
+  { name: "Cotton Candy Crew",      start: 181, count: 29 },
 ];
-
-const TYPE_COLOR = {
-  "Base":           "#e2e8f0",
-  "Rainbow":        "#fce7f3",
-  "Glitter":        "#dbeafe",
-  "Crystal Shine":  "#fef9c3",
-  "Golden Glitter": "#fef3c7",
-};
 
 const STORAGE_KEY = "hkf_v2";
 let collected = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"));
@@ -381,96 +317,76 @@ let currentFilter = "all";
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify([...collected])); }
 
 // ── Build DOM ─────────────────────────────────────────────────────────────
-function buildPanels() {
-  const container = document.getElementById("panels");
+function buildSections() {
+  const container = document.getElementById("sections");
   container.innerHTML = "";
 
-  for (const panel of PANELS) {
-    const panelEl = document.createElement("div");
-    panelEl.className = "panel";
-    panelEl.innerHTML = `<div class="panel-title">${panel.label}</div>
-      <div class="panel-scroll"><div class="panel-row" id="row-${PANELS.indexOf(panel)}"></div></div>`;
-    container.appendChild(panelEl);
+  for (const sec of SECTIONS) {
+    const card = document.createElement("div");
+    card.className = "sec-card";
 
-    const row = panelEl.querySelector(".panel-row");
+    const done = Array.from({length: sec.count}, (_, i) => sec.start + i)
+                      .filter(n => collected.has(n)).length;
 
-    // Left half
-    for (const sec of panel.left) renderSection(row, sec);
+    card.innerHTML = `
+      <div class="sec-header">
+        <div class="sec-name">${sec.name}</div>
+        <div class="sec-badge" id="badge-${sec.start}">${done}/${sec.count}</div>
+      </div>
+      <div class="sec-grids" id="grids-${sec.start}"></div>`;
 
-    // Divider
-    const div = document.createElement("div");
-    div.className = "half-divider";
-    row.appendChild(div);
+    container.appendChild(card);
 
-    // Right half
-    for (const sec of panel.right) renderSection(row, sec);
-  }
-}
+    const gridsRow = card.querySelector(`#grids-${sec.start}`);
 
-function renderSection(row, sec) {
-  const col = document.createElement("div");
-  col.className = "sec-col";
-  col.dataset.secStart = sec.start;
+    // Split cards into chunks of 9, padding last chunk with skeletons
+    const numGrids = Math.ceil(sec.count / 9);
+    for (let g = 0; g < numGrids; g++) {
+      const grid = document.createElement("div");
+      grid.className = "card-grid";
+      gridsRow.appendChild(grid);
 
-  const secCards = [];
-  for (let i = 0; i < 9; i++) {
-    const n = sec.start + i;
-    if (n <= 209) secCards.push(n);
-  }
-  const total = secCards.length;
-  const done = secCards.filter(n => collected.has(n)).length;
-  const color = TYPE_COLOR[sec.type] || "#f3e8ff";
+      for (let i = 0; i < 9; i++) {
+        const cardIdx = g * 9 + i;
+        const tile = document.createElement("div");
 
-  col.innerHTML = `
-    <div class="sec-header">
-      <div class="sec-name">${sec.name}</div>
-      <div class="sec-badge" style="background:${color};color:#5a3a6e;"
-           id="badge-${sec.start}">${done}/${total}</div>
-    </div>
-    <div class="card-grid${total < 9 ? ' partial' : ''}" id="grid-${sec.start}"></div>`;
+        if (cardIdx >= sec.count) {
+          // Skeleton placeholder
+          tile.className = "card-tile skeleton";
+          grid.appendChild(tile);
+          continue;
+        }
 
-  row.appendChild(col);
+        const n = sec.start + cardIdx;
+        tile.className = "card-tile" + (collected.has(n) ? " collected" : "");
+        tile.dataset.card = n;
+        applyFilterClass(tile, n);
 
-  const grid = col.querySelector(".card-grid");
+        const img = document.createElement("img");
+        img.src = `cards/card_${String(n).padStart(3,"0")}.jpg`;
+        img.alt = `Card ${n}`;
+        img.loading = "lazy";
+        img.decoding = "async";
 
-  for (let i = 0; i < 9; i++) {
-    const n = sec.start + i;
-    const tile = document.createElement("div");
+        const num = document.createElement("div");
+        num.className = "card-num";
+        num.textContent = n;
 
-    if (n > 209) {
-      tile.className = "card-tile empty";
-      grid.appendChild(tile);
-      continue;
+        tile.appendChild(img);
+        tile.appendChild(num);
+
+        tile.addEventListener("click", () => {
+          if (collected.has(n)) { collected.delete(n); tile.classList.remove("collected"); }
+          else                   { collected.add(n);    tile.classList.add("collected"); }
+          save();
+          applyFilterClass(tile, n);
+          updateStats();
+          showToast(collected.has(n) ? `#${n} collected!` : `#${n} removed`);
+        });
+
+        grid.appendChild(tile);
+      }
     }
-
-    tile.className = "card-tile" + (collected.has(n) ? " collected" : "");
-    tile.dataset.card = n;
-    tile.dataset.sec = sec.start;
-    applyFilterClass(tile, n);
-
-    const img = document.createElement("img");
-    img.src = `cards/card_${String(n).padStart(3,"0")}.jpg`;
-    img.alt = `Card ${n}`;
-    img.loading = "lazy";
-    img.decoding = "async";
-
-    const num = document.createElement("div");
-    num.className = "card-num";
-    num.textContent = n;
-
-    tile.appendChild(img);
-    tile.appendChild(num);
-
-    tile.addEventListener("click", () => {
-      if (collected.has(n)) { collected.delete(n); tile.classList.remove("collected"); }
-      else                   { collected.add(n);    tile.classList.add("collected"); }
-      save();
-      applyFilterClass(tile, n);
-      updateStats();
-      showToast(collected.has(n) ? `#${n} collected!` : `#${n} removed`);
-    });
-
-    grid.appendChild(tile);
   }
 }
 
@@ -489,15 +405,12 @@ function updateStats() {
   document.getElementById("progressLabel").textContent = `${n} / 209 collected (${pct}%)`;
   document.getElementById("countLabel").textContent = `${n}/209`;
 
-  // Update section badges
-  for (const panel of PANELS) {
-    for (const sec of [...panel.left, ...panel.right]) {
-      const badge = document.getElementById(`badge-${sec.start}`);
-      if (!badge) continue;
-      const cards = Array.from({length:9}, (_,i) => sec.start+i).filter(c => c<=209);
-      const done = cards.filter(c => collected.has(c)).length;
-      badge.textContent = `${done}/${cards.length}`;
-    }
+  for (const sec of SECTIONS) {
+    const badge = document.getElementById(`badge-${sec.start}`);
+    if (!badge) continue;
+    const done = Array.from({length: sec.count}, (_, i) => sec.start + i)
+                      .filter(c => collected.has(c)).length;
+    badge.textContent = `${done}/${sec.count}`;
   }
 }
 
@@ -507,7 +420,7 @@ document.querySelectorAll("[data-filter]").forEach(btn => {
     currentFilter = btn.dataset.filter;
     document.querySelectorAll("[data-filter]").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    document.querySelectorAll(".card-tile:not(.empty)").forEach(tile => {
+    document.querySelectorAll(".card-tile:not(.skeleton)").forEach(tile => {
       applyFilterClass(tile, +tile.dataset.card);
     });
   });
@@ -519,7 +432,7 @@ document.getElementById("btnReset").addEventListener("click", () => {
   collected.clear();
   save();
   document.querySelectorAll(".card-tile.collected").forEach(t => t.classList.remove("collected"));
-  document.querySelectorAll(".card-tile:not(.empty)").forEach(t => applyFilterClass(t, +t.dataset.card));
+  document.querySelectorAll(".card-tile:not(.skeleton)").forEach(t => applyFilterClass(t, +t.dataset.card));
   updateStats();
   showToast("All cards reset");
 });
@@ -535,7 +448,7 @@ function showToast(msg) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
-buildPanels();
+buildSections();
 updateStats();
 </script>
 </body>
