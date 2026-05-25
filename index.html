@@ -16,65 +16,74 @@
       --muted:      #9e7a8c;
       --green:      #06d6a0;
       --radius:     8px;
-      --card-w:     72px;
-      --card-h:     118px;
+
+      /* Carousel peek on each side */
+      --peek: 28px;
+      /* Slide is capped at 600px on large screens */
+      --slide-max: 600px;
+      --slide-w: min(calc(100vw - 2 * var(--peek)), var(--slide-max));
+      --grid-gap: 4px;
+      /* Fixed chrome height: header≈76 + controls≈44 + indicator≈40 + slide-pad≈20 + sec-header≈45 + gap≈10 */
+      --overhead: 235px;
+      --avail-h: calc(100dvh - var(--overhead));
+      /* Card width limited by slide width AND by available height (so grid always fits vertically) */
+      --card-from-w: calc((var(--slide-w) - 2 * var(--grid-gap)) / 3);
+      --card-from-h: calc((var(--avail-h) - 2 * var(--grid-gap)) / 3 / 1.36);
+      --card-w: min(220px, var(--card-from-w), var(--card-from-h));
+      --card-h: calc(var(--card-w) * 1.36);
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
+      display: flex;
+      flex-direction: column;
     }
 
     /* ── Header ── */
     header {
       background: linear-gradient(135deg, #f72585 0%, #b5179e 55%, #7209b7 100%);
       color: white;
-      padding: 16px 16px 12px;
-      position: sticky;
-      top: 0;
-      z-index: 200;
-      box-shadow: 0 2px 16px rgba(183,9,126,.4);
+      padding: 12px 16px 10px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 12px rgba(183,9,126,.4);
     }
-    .header-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    header h1 { font-size: clamp(1rem, 3.5vw, 1.4rem); font-weight: 900; letter-spacing: -.4px; }
+    header h1 { font-size: clamp(.9rem, 3.5vw, 1.3rem); font-weight: 900; letter-spacing: -.4px; }
     .progress-wrap {
       background: rgba(255,255,255,.25);
       border-radius: 999px;
-      height: 8px;
-      margin-top: 10px;
+      height: 6px;
+      margin-top: 8px;
       overflow: hidden;
     }
     .progress-bar { height: 100%; background: var(--green); border-radius: 999px; transition: width .4s ease; }
-    .progress-label { font-size: .78rem; opacity: .9; margin-top: 5px; font-weight: 600; }
+    .progress-label { font-size: .72rem; opacity: .9; margin-top: 4px; font-weight: 600; }
 
     /* ── Controls ── */
     .controls {
       display: flex;
       gap: 6px;
-      flex-wrap: wrap;
-      padding: 10px 12px;
+      padding: 8px 12px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 78px;
-      z-index: 150;
+      flex-shrink: 0;
       align-items: center;
     }
     .btn {
-      padding: 5px 13px;
+      padding: 4px 12px;
       border-radius: 999px;
       border: 1.5px solid var(--border);
       background: white;
       color: var(--text);
-      font-size: .78rem;
+      font-size: .75rem;
       font-weight: 600;
       cursor: pointer;
       transition: all .15s;
@@ -84,67 +93,71 @@
     .btn.active { background: var(--pink); color: white; border-color: var(--pink); }
     .btn-reset { border-color: #ffb3c6; color: #c9184a; margin-left: auto; }
     .btn-reset:hover { background: #c9184a; color: white; border-color: #c9184a; }
-    .count-label { font-size: .75rem; color: var(--muted); font-weight: 600; }
+    .count-label { font-size: .72rem; color: var(--muted); font-weight: 600; }
 
-    /* ── Sections container ── */
-    .sections {
+    /* ── Carousel wrapper ── */
+    .carousel-wrapper {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      cursor: grab;
+    }
+    .carousel-wrapper:active { cursor: grabbing; }
+
+    /* ── Track ── */
+    .carousel-track {
       display: flex;
-      flex-wrap: wrap;
-      gap: 24px;
-      padding: 20px 16px;
+      gap: 12px;
+      height: 100%;
+      transition: transform .38s cubic-bezier(.4,0,.2,1);
+      will-change: transform;
+    }
+    .carousel-track.no-transition { transition: none; }
+
+    /* ── Slide ── */
+    .slide {
+      flex: 0 0 var(--slide-w);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
+      gap: 10px;
+      padding: 10px 0;
     }
 
-    /* ── Section card ── */
-    .sec-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 10px 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .sec-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      width: 100%;
-    }
-    .sec-name {
-      font-size: .65rem;
+    /* ── Slide header ── */
+    .slide-header { text-align: center; }
+    .slide-sec-name {
+      font-size: .72rem;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: .07em;
+      letter-spacing: .08em;
       color: var(--muted);
-      text-align: center;
     }
-    .sec-badge {
-      font-size: .58rem;
+    .slide-sec-sub {
+      font-size: .6rem;
+      color: var(--pink-mid);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .slide-badge {
+      display: inline-block;
+      margin-top: 5px;
+      font-size: .62rem;
       background: var(--pink-light);
       color: var(--pink);
-      padding: 2px 8px;
+      padding: 2px 10px;
       border-radius: 999px;
       font-weight: 700;
     }
 
-    /* Row of grids inside a section (for large sections like Cotton Candy Crew) */
-    .sec-grids {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-    }
-
-    /* ── 3×3 card grid ── */
+    /* ── Card grid ── */
     .card-grid {
       display: grid;
       grid-template-columns: repeat(3, var(--card-w));
       grid-template-rows: repeat(3, var(--card-h));
-      gap: 4px;
+      gap: var(--grid-gap);
     }
 
     /* ── Card tile ── */
@@ -164,12 +177,11 @@
     }
     .card-tile:hover {
       border-color: var(--pink-mid);
-      transform: scale(1.07);
+      transform: scale(1.06);
       box-shadow: 0 4px 14px rgba(247,37,133,.25);
       z-index: 10;
     }
-    .card-tile:active { transform: scale(.95); }
-
+    .card-tile:active { transform: scale(.94); }
     .card-tile img {
       width: 100%;
       flex: 1;
@@ -179,7 +191,7 @@
       pointer-events: none;
     }
     .card-num {
-      font-size: .6rem;
+      font-size: .58rem;
       font-weight: 800;
       color: var(--muted);
       text-align: center;
@@ -188,16 +200,12 @@
       background: white;
       border-top: 1px solid var(--border);
     }
-
-    /* Skeleton (empty placeholder) */
     .card-tile.skeleton {
       border: 2px dashed var(--border);
       background: #fdf0f5;
       cursor: default;
       pointer-events: none;
     }
-
-    /* Collected */
     .card-tile.collected {
       border-color: var(--pink);
       box-shadow: 0 0 0 2px rgba(247,37,133,.2);
@@ -215,10 +223,8 @@
     .card-tile.collected::before {
       content: "✓";
       position: absolute;
-      top: 4px;
-      right: 5px;
-      width: 16px;
-      height: 16px;
+      top: 4px; right: 5px;
+      width: 16px; height: 16px;
       background: var(--pink);
       color: white;
       border-radius: 50%;
@@ -231,39 +237,72 @@
       line-height: 16px;
       text-align: center;
     }
-
-    /* Hidden for filter */
     .card-tile.filtered { opacity: .12; pointer-events: none; }
 
-    /* ── Toast ── */
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(70px);
-      background: #3a1a2e;
-      color: white;
-      padding: 9px 18px;
-      border-radius: 999px;
-      font-size: .8rem;
-      font-weight: 600;
-      transition: transform .28s ease;
-      z-index: 9999;
-      pointer-events: none;
-      white-space: nowrap;
+    /* ── Side arrows (overlaid on peek area) ── */
+    .carousel-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 20;
+      width: var(--peek);
+      height: 64px;
+      border: none;
+      background: transparent;
+      color: var(--pink);
+      font-size: 1.4rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color .15s;
     }
-    .toast.show { transform: translateX(-50%) translateY(0); }
+    .carousel-arrow:hover { color: var(--pink-mid); }
+    .carousel-arrow:disabled { opacity: 0; pointer-events: none; }
+    .carousel-arrow.left  { left: 0;  border-radius: 0 10px 10px 0; }
+    .carousel-arrow.right { right: 0; border-radius: 10px 0 0 10px; }
 
-    /* ── Footer ── */
-    footer { text-align: center; padding: 20px 16px; font-size: .7rem; color: var(--muted); }
+    /* ── Indicator bar (sits in its own layout row, no overlap) ── */
+    .carousel-indicator {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 6px 0 8px;
+      background: var(--bg);
+    }
+    .nav-dots {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: calc(var(--slide-w) - 16px);
+    }
+    .nav-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background .2s, transform .2s, width .2s;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .nav-dot.visited  { background: var(--pink-mid); }
+    .nav-dot.active   { background: var(--pink); width: 18px; border-radius: 3px; }
+    .nav-counter {
+      font-size: .65rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
   </style>
 </head>
 <body>
 
 <header>
-  <div class="header-top">
-    <h1>Hello Kitty &amp; Friends — Card Tracker</h1>
-  </div>
+  <h1>Hello Kitty &amp; Friends — Card Tracker</h1>
   <div class="progress-wrap">
     <div class="progress-bar" id="progressBar" style="width:0%"></div>
   </div>
@@ -275,14 +314,19 @@
   <button class="btn" data-filter="collected">Collected</button>
   <button class="btn" data-filter="needed">Needed</button>
   <span class="count-label" id="countLabel">0/209</span>
-  <button class="btn btn-reset" id="btnReset">Reset all</button>
+  <button class="btn btn-reset" id="btnReset">Reset</button>
 </div>
 
-<div class="sections" id="sections"></div>
+<div class="carousel-wrapper" id="carouselWrapper">
+  <div class="carousel-track" id="carouselTrack"></div>
+  <button class="carousel-arrow left"  id="prevBtn">&#8249;</button>
+  <button class="carousel-arrow right" id="nextBtn">&#8250;</button>
+</div>
 
-<footer>Tap any card to mark as collected &bull; Saved in your browser &bull; 209 cards total</footer>
-
-<div class="toast" id="toast"></div>
+<div class="carousel-indicator">
+  <div class="nav-dots"    id="navDots"></div>
+  <div class="nav-counter" id="navCounter"></div>
+</div>
 
 <script>
 // ── Data ──────────────────────────────────────────────────────────────────
@@ -310,111 +354,227 @@ const SECTIONS = [
   { name: "Cotton Candy Crew",      start: 181, count: 29 },
 ];
 
+// One slide per 3×3 grid
+const SLIDES = [];
+for (const sec of SECTIONS) {
+  const numGrids = Math.ceil(sec.count / 9);
+  for (let g = 0; g < numGrids; g++) {
+    SLIDES.push({ sec, gridIndex: g, totalGrids: numGrids });
+  }
+}
+
 const STORAGE_KEY = "hkf_v2";
-let collected = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"));
+let collected    = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"));
 let currentFilter = "all";
+let currentSlide  = 0;
 
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify([...collected])); }
 
-// ── Build DOM ─────────────────────────────────────────────────────────────
-function buildSections() {
-  const container = document.getElementById("sections");
-  container.innerHTML = "";
+// ── Carousel geometry ─────────────────────────────────────────────────────
+const PEEK = 28;   // px — must match CSS --peek
+const GAP  = 12;   // px — gap between slides in track
 
-  for (const sec of SECTIONS) {
-    const card = document.createElement("div");
-    card.className = "sec-card";
+const SLIDE_MAX = 600;
+function slideWidth()  { return Math.min(wrapper().clientWidth - 2 * PEEK, SLIDE_MAX); }
+function slideUnit()   { return slideWidth() + GAP; }
+function wrapper()     { return document.getElementById("carouselWrapper"); }
+function track()       { return document.getElementById("carouselTrack"); }
+
+// translateX to show slide N, with optional live drag delta
+function calcTranslate(n, delta = 0) {
+  return -(n * slideUnit()) + PEEK + delta;
+}
+
+// ── Build carousel ────────────────────────────────────────────────────────
+function buildCarousel() {
+  track().innerHTML = "";
+
+  SLIDES.forEach(({ sec, gridIndex, totalGrids }, slideIdx) => {
+    const slideEl = document.createElement("div");
+    slideEl.className = "slide";
+
+    const subLabel = totalGrids > 1
+      ? `<div class="slide-sec-sub">${gridIndex + 1} of ${totalGrids}</div>` : "";
 
     const done = Array.from({length: sec.count}, (_, i) => sec.start + i)
                       .filter(n => collected.has(n)).length;
 
-    card.innerHTML = `
-      <div class="sec-header">
-        <div class="sec-name">${sec.name}</div>
-        <div class="sec-badge" id="badge-${sec.start}">${done}/${sec.count}</div>
+    slideEl.innerHTML = `
+      <div class="slide-header">
+        <div class="slide-sec-name">${sec.name}</div>
+        ${subLabel}
+        <div class="slide-badge" data-badge="${sec.start}">${done}/${sec.count}</div>
       </div>
-      <div class="sec-grids" id="grids-${sec.start}"></div>`;
+      <div class="card-grid"></div>`;
 
-    container.appendChild(card);
+    track().appendChild(slideEl);
 
-    const gridsRow = card.querySelector(`#grids-${sec.start}`);
+    const grid = slideEl.querySelector(".card-grid");
+    for (let i = 0; i < 9; i++) {
+      const cardIdx = gridIndex * 9 + i;
+      const tile = document.createElement("div");
 
-    // Split cards into chunks of 9, padding last chunk with skeletons
-    const numGrids = Math.ceil(sec.count / 9);
-    for (let g = 0; g < numGrids; g++) {
-      const grid = document.createElement("div");
-      grid.className = "card-grid";
-      gridsRow.appendChild(grid);
-
-      for (let i = 0; i < 9; i++) {
-        const cardIdx = g * 9 + i;
-        const tile = document.createElement("div");
-
-        if (cardIdx >= sec.count) {
-          // Skeleton placeholder
-          tile.className = "card-tile skeleton";
-          grid.appendChild(tile);
-          continue;
-        }
-
-        const n = sec.start + cardIdx;
-        tile.className = "card-tile" + (collected.has(n) ? " collected" : "");
-        tile.dataset.card = n;
-        applyFilterClass(tile, n);
-
-        const img = document.createElement("img");
-        img.src = `cards/card_${String(n).padStart(3,"0")}.jpg`;
-        img.alt = `Card ${n}`;
-        img.loading = "lazy";
-        img.decoding = "async";
-
-        const num = document.createElement("div");
-        num.className = "card-num";
-        num.textContent = n;
-
-        tile.appendChild(img);
-        tile.appendChild(num);
-
-        tile.addEventListener("click", () => {
-          if (collected.has(n)) { collected.delete(n); tile.classList.remove("collected"); }
-          else                   { collected.add(n);    tile.classList.add("collected"); }
-          save();
-          applyFilterClass(tile, n);
-          updateStats();
-          showToast(collected.has(n) ? `#${n} collected!` : `#${n} removed`);
-        });
-
+      if (cardIdx >= sec.count) {
+        tile.className = "card-tile skeleton";
         grid.appendChild(tile);
+        continue;
       }
+
+      const n = sec.start + cardIdx;
+      tile.className = "card-tile" + (collected.has(n) ? " collected" : "");
+      tile.dataset.card = n;
+      applyFilterClass(tile, n);
+
+      const img = document.createElement("img");
+      img.src    = `cards/card_${String(n).padStart(3,"0")}.jpg`;
+      img.alt    = `Card ${n}`;
+      img.loading = slideIdx < 3 ? "eager" : "lazy";
+
+      const num = document.createElement("div");
+      num.className = "card-num";
+      num.textContent = n;
+
+      tile.appendChild(img);
+      tile.appendChild(num);
+
+      tile.addEventListener("click", () => {
+        if (didDrag) return;
+        if (collected.has(n)) { collected.delete(n); tile.classList.remove("collected"); }
+        else                   { collected.add(n);    tile.classList.add("collected"); }
+        save();
+        applyFilterClass(tile, n);
+        updateStats();
+      });
+
+      grid.appendChild(tile);
     }
-  }
+  });
+
+  buildDots();
+  goToSlide(0, false);
 }
 
+// ── Dots ──────────────────────────────────────────────────────────────────
+function buildDots() {
+  const dotsEl = document.getElementById("navDots");
+  dotsEl.innerHTML = "";
+  SLIDES.forEach((_, i) => {
+    const dot = document.createElement("div");
+    dot.className = "nav-dot";
+    dot.addEventListener("click", () => goToSlide(i));
+    dotsEl.appendChild(dot);
+  });
+}
+
+function updateNav() {
+  document.querySelectorAll(".nav-dot").forEach((dot, i) => {
+    dot.classList.toggle("active",  i === currentSlide);
+    dot.classList.toggle("visited", i < currentSlide);
+  });
+  document.getElementById("navCounter").textContent =
+    `${currentSlide + 1} / ${SLIDES.length}`;
+  document.getElementById("prevBtn").disabled = currentSlide === 0;
+  document.getElementById("nextBtn").disabled = currentSlide === SLIDES.length - 1;
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+function goToSlide(n, animate = true) {
+  currentSlide = Math.max(0, Math.min(n, SLIDES.length - 1));
+  const t = track();
+  t.classList.toggle("no-transition", !animate);
+  t.style.transform = `translateX(${calcTranslate(currentSlide)}px)`;
+  if (!animate) requestAnimationFrame(() => t.classList.remove("no-transition"));
+  updateNav();
+}
+
+document.getElementById("prevBtn").addEventListener("click", () => goToSlide(currentSlide - 1));
+document.getElementById("nextBtn").addEventListener("click", () => goToSlide(currentSlide + 1));
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft")  goToSlide(currentSlide - 1);
+  if (e.key === "ArrowRight") goToSlide(currentSlide + 1);
+});
+
+// ── Drag guard (prevents card clicks after a swipe/drag) ──────────────────
+let didDrag = false;
+
+// ── Touch swipe ───────────────────────────────────────────────────────────
+let touchStartX = 0, touchStartY = 0, isSwiping = false;
+const w = document.getElementById("carouselWrapper");
+
+w.addEventListener("touchstart", e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  isSwiping   = false;
+  didDrag     = false;
+}, { passive: true });
+
+w.addEventListener("touchmove", e => {
+  const dx = e.touches[0].clientX - touchStartX;
+  const dy = e.touches[0].clientY - touchStartY;
+  if (!isSwiping && Math.abs(dy) > Math.abs(dx)) return;
+  isSwiping = true;
+  didDrag   = true;
+  const t = track();
+  t.classList.add("no-transition");
+  t.style.transform = `translateX(${calcTranslate(currentSlide, dx)}px)`;
+}, { passive: true });
+
+w.addEventListener("touchend", e => {
+  if (!isSwiping) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  goToSlide(currentSlide + (dx < -50 ? 1 : dx > 50 ? -1 : 0));
+});
+
+// ── Mouse drag (desktop) ──────────────────────────────────────────────────
+let mouseStartX = 0, isDraggingMouse = false;
+
+w.addEventListener("mousedown", e => {
+  mouseStartX     = e.clientX;
+  isDraggingMouse = true;
+  didDrag         = false;
+  track().classList.add("no-transition");
+  w.style.cursor = "grabbing";
+  e.preventDefault();
+});
+
+document.addEventListener("mousemove", e => {
+  if (!isDraggingMouse) return;
+  const dx = e.clientX - mouseStartX;
+  if (Math.abs(dx) > 5) didDrag = true;
+  track().style.transform = `translateX(${calcTranslate(currentSlide, dx)}px)`;
+});
+
+document.addEventListener("mouseup", e => {
+  if (!isDraggingMouse) return;
+  isDraggingMouse = false;
+  w.style.cursor  = "";
+  const dx = e.clientX - mouseStartX;
+  goToSlide(currentSlide + (dx < -50 ? 1 : dx > 50 ? -1 : 0));
+});
+
+// ── Stats & filter ────────────────────────────────────────────────────────
 function applyFilterClass(tile, n) {
-  const filtered =
+  tile.classList.toggle("filtered",
     (currentFilter === "collected" && !collected.has(n)) ||
-    (currentFilter === "needed"    &&  collected.has(n));
-  tile.classList.toggle("filtered", filtered);
+    (currentFilter === "needed"    &&  collected.has(n)));
 }
 
-// ── Stats ─────────────────────────────────────────────────────────────────
 function updateStats() {
-  const n = collected.size;
+  const n   = collected.size;
   const pct = (n / 209 * 100).toFixed(1);
   document.getElementById("progressBar").style.width = pct + "%";
   document.getElementById("progressLabel").textContent = `${n} / 209 collected (${pct}%)`;
-  document.getElementById("countLabel").textContent = `${n}/209`;
+  document.getElementById("countLabel").textContent    = `${n}/209`;
 
   for (const sec of SECTIONS) {
-    const badge = document.getElementById(`badge-${sec.start}`);
-    if (!badge) continue;
     const done = Array.from({length: sec.count}, (_, i) => sec.start + i)
                       .filter(c => collected.has(c)).length;
-    badge.textContent = `${done}/${sec.count}`;
+    document.querySelectorAll(`[data-badge="${sec.start}"]`)
+            .forEach(el => el.textContent = `${done}/${sec.count}`);
   }
 }
 
-// ── Filters ───────────────────────────────────────────────────────────────
 document.querySelectorAll("[data-filter]").forEach(btn => {
   btn.addEventListener("click", () => {
     currentFilter = btn.dataset.filter;
@@ -426,7 +586,6 @@ document.querySelectorAll("[data-filter]").forEach(btn => {
   });
 });
 
-// ── Reset ─────────────────────────────────────────────────────────────────
 document.getElementById("btnReset").addEventListener("click", () => {
   if (!confirm("Reset all collected cards? Cannot be undone.")) return;
   collected.clear();
@@ -434,21 +593,10 @@ document.getElementById("btnReset").addEventListener("click", () => {
   document.querySelectorAll(".card-tile.collected").forEach(t => t.classList.remove("collected"));
   document.querySelectorAll(".card-tile:not(.skeleton)").forEach(t => applyFilterClass(t, +t.dataset.card));
   updateStats();
-  showToast("All cards reset");
 });
 
-// ── Toast ─────────────────────────────────────────────────────────────────
-let toastTimer;
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 1700);
-}
-
 // ── Init ──────────────────────────────────────────────────────────────────
-buildSections();
+buildCarousel();
 updateStats();
 </script>
 </body>
