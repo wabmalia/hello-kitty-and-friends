@@ -172,8 +172,6 @@
       position: relative;
       transition: transform .14s, border-color .14s, box-shadow .14s;
       -webkit-tap-highlight-color: transparent;
-      display: flex;
-      flex-direction: column;
     }
     .card-tile:hover {
       border-color: var(--pink-mid);
@@ -184,21 +182,25 @@
     .card-tile:active { transform: scale(.94); }
     .card-tile img {
       width: 100%;
-      flex: 1;
+      height: 100%;
       object-fit: cover;
       object-position: center top;
       display: block;
       pointer-events: none;
     }
     .card-num {
-      font-size: .58rem;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      font-size: .93rem;
       font-weight: 800;
-      color: var(--muted);
+      color: var(--text);
       text-align: center;
-      padding: 2px 0 3px;
-      line-height: 1;
-      background: white;
-      border-top: 1px solid var(--border);
+      padding: 3px 0 4px;
+      line-height: 1.4;
+      background: rgba(255,214,231,.82);
+      backdrop-filter: blur(2px);
     }
     .card-tile.skeleton {
       border: 2px dashed var(--border);
@@ -211,7 +213,7 @@
       box-shadow: 0 0 0 2px rgba(247,37,133,.2);
     }
     .card-tile.collected img { filter: brightness(.82) saturate(1.1); }
-    .card-tile.collected .card-num { color: var(--pink); background: var(--pink-light); }
+    .card-tile.collected .card-num { color: var(--text); background: rgba(255,214,231,.82); }
     .card-tile.collected::after {
       content: "";
       position: absolute;
@@ -223,18 +225,18 @@
     .card-tile.collected::before {
       content: "✓";
       position: absolute;
-      top: 4px; right: 5px;
-      width: 16px; height: 16px;
+      top: 5px; right: 6px;
+      width: 24px; height: 24px;
       background: var(--pink);
       color: white;
       border-radius: 50%;
-      font-size: .6rem;
+      font-size: .95rem;
       font-weight: 900;
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 5;
-      line-height: 16px;
+      line-height: 24px;
       text-align: center;
     }
     .card-tile.filtered { opacity: .12; pointer-events: none; }
@@ -523,7 +525,7 @@ w.addEventListener("touchmove", e => {
 w.addEventListener("touchend", e => {
   if (!isSwiping) return;
   const dx = e.changedTouches[0].clientX - touchStartX;
-  goToSlide(currentSlide + (dx < -50 ? 1 : dx > 50 ? -1 : 0));
+  goToSlide(Math.round(currentSlide - dx / slideUnit()));
 });
 
 // ── Mouse drag (desktop) ──────────────────────────────────────────────────
@@ -550,7 +552,7 @@ document.addEventListener("mouseup", e => {
   isDraggingMouse = false;
   w.style.cursor  = "";
   const dx = e.clientX - mouseStartX;
-  goToSlide(currentSlide + (dx < -50 ? 1 : dx > 50 ? -1 : 0));
+  goToSlide(Math.round(currentSlide - dx / slideUnit()));
 });
 
 // ── Stats & filter ────────────────────────────────────────────────────────
