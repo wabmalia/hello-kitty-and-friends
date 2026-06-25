@@ -91,7 +91,9 @@
     }
     .btn:hover { border-color: var(--pink); color: var(--pink); }
     .btn.active { background: var(--pink); color: white; border-color: var(--pink); }
-    .btn-reset { border-color: #ffb3c6; color: #c9184a; margin-left: auto; }
+    .btn-share { color: #7b2d8b; border-color: #c77dff; margin-left: auto; }
+    .btn-share:hover { background: #7b2d8b; color: white; border-color: #7b2d8b; }
+    .btn-reset { border-color: #ffb3c6; color: #c9184a; }
     .btn-reset:hover { background: #c9184a; color: white; border-color: #c9184a; }
     .count-label { font-size: .72rem; color: var(--muted); font-weight: 600; }
 
@@ -299,6 +301,100 @@
       font-weight: 700;
     }
 
+    /* ── Share overlay ── */
+    .share-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(58,26,46,.55);
+      z-index: 100;
+      display: flex;
+      align-items: flex-end;
+    }
+    .share-overlay.hidden { display: none; }
+    .share-modal {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-height: 82dvh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 -8px 32px rgba(58,26,46,.2);
+    }
+    @media (min-width: 520px) {
+      .share-overlay { align-items: center; padding: 20px; }
+      .share-modal   { border-radius: 20px; max-width: 480px; margin: auto; max-height: 78dvh; }
+    }
+    .share-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .share-modal-title { font-size: 1rem; font-weight: 900; color: var(--text); }
+    .share-modal-sub   { font-size: .72rem; color: var(--pink); font-weight: 700; margin-top: 3px; }
+    .share-close {
+      border: none;
+      background: var(--pink-light);
+      color: var(--text);
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      font-size: .8rem;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .share-close:hover { background: var(--pink); color: white; }
+    .share-modal-body  { flex: 1; overflow-y: auto; padding: 14px 18px; }
+    .share-sec-row     { margin-bottom: 12px; }
+    .share-sec-name {
+      font-size: .67rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .share-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .share-card-thumb {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .share-card-img {
+      width: 56px;
+      height: 76px;
+      object-fit: cover;
+      object-position: center top;
+      border-radius: 5px;
+      border: 1.5px solid var(--border);
+      display: block;
+    }
+    .share-card-num {
+      font-size: .6rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .share-modal-footer {
+      padding: 10px 18px 18px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .btn-copy-list {
+      width: 100%;
+      padding: 8px 16px;
+      font-size: .82rem;
+      background: var(--pink);
+      color: white;
+      border-color: var(--pink);
+    }
+    .btn-copy-list:hover { background: #d91a6e; border-color: #d91a6e; color: white; }
+
   </style>
 </head>
 <body>
@@ -316,6 +412,7 @@
   <button class="btn" data-filter="collected">Collected</button>
   <button class="btn" data-filter="needed">Needed</button>
   <span class="count-label" id="countLabel">0/209</span>
+  <button class="btn btn-share" id="btnShare">Share missing</button>
   <button class="btn btn-reset" id="btnReset">Reset</button>
 </div>
 
@@ -328,6 +425,22 @@
 <div class="carousel-indicator">
   <div class="nav-dots"    id="navDots"></div>
   <div class="nav-counter" id="navCounter"></div>
+</div>
+
+<div id="shareOverlay" class="share-overlay hidden">
+  <div class="share-modal">
+    <div class="share-modal-header">
+      <div>
+        <div class="share-modal-title">Missing cards</div>
+        <div class="share-modal-sub" id="shareSub"></div>
+      </div>
+      <button class="share-close" id="shareClose">✕</button>
+    </div>
+    <div class="share-modal-body" id="shareBody"></div>
+    <div class="share-modal-footer">
+      <button class="btn btn-copy-list" id="shareCopyList">Copy list</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -597,9 +710,81 @@ document.getElementById("btnReset").addEventListener("click", () => {
   updateStats();
 });
 
+// ── Share missing ─────────────────────────────────────────────────────────
+function copyText(text) {
+  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+  const el = document.createElement("textarea");
+  el.value = text;
+  Object.assign(el.style, { position: "fixed", opacity: "0" });
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand("copy");
+  el.remove();
+  return Promise.resolve();
+}
+
+document.getElementById("btnShare").addEventListener("click", () => {
+  const missing = [];
+  for (let n = 1; n <= 209; n++) if (!collected.has(n)) missing.push(n);
+  const url = new URL(location.href);
+  url.search = missing.length ? "?missing=" + missing.join(",") : "";
+  const btn = document.getElementById("btnShare");
+  copyText(url.toString()).then(() => {
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = "Share missing", 2000);
+  });
+});
+
+// ── Shared view (read-only, never touches localStorage) ───────────────────
+function initSharedView() {
+  const raw = new URLSearchParams(location.search).get("missing");
+  if (!raw) return;
+
+  const missingSet = new Set(raw.split(",").map(Number).filter(n => n >= 1 && n <= 209));
+  if (!missingSet.size) return;
+
+  document.getElementById("shareSub").textContent =
+    `${missingSet.size} card${missingSet.size !== 1 ? "s" : ""} needed`;
+
+  const body = document.getElementById("shareBody");
+  for (const sec of SECTIONS) {
+    const cards = Array.from({length: sec.count}, (_, i) => sec.start + i)
+                       .filter(n => missingSet.has(n));
+    if (!cards.length) continue;
+    const row = document.createElement("div");
+    row.className = "share-sec-row";
+    const chips = cards.map(n =>
+      `<div class="share-card-thumb"><img class="share-card-img" src="cards/card_${String(n).padStart(3,"0")}.jpg" alt="Card ${n}" loading="lazy"><span class="share-card-num">${n}</span></div>`
+    ).join("");
+    row.innerHTML = `<div class="share-sec-name">${sec.name}</div><div class="share-chips">${chips}</div>`;
+    body.appendChild(row);
+  }
+
+  document.getElementById("shareOverlay").classList.remove("hidden");
+
+  document.getElementById("shareCopyList").addEventListener("click", () => {
+    const lines = SECTIONS.flatMap(sec => {
+      const cards = Array.from({length: sec.count}, (_, i) => sec.start + i)
+                         .filter(n => missingSet.has(n));
+      return cards.length ? [`${sec.name}: ${cards.join(", ")}`] : [];
+    });
+    const btn = document.getElementById("shareCopyList");
+    copyText(lines.join("\n")).then(() => {
+      btn.textContent = "Copied!";
+      setTimeout(() => btn.textContent = "Copy list", 2000);
+    });
+  });
+
+  document.getElementById("shareClose").addEventListener("click", () => {
+    document.getElementById("shareOverlay").classList.add("hidden");
+    history.replaceState(null, "", location.pathname);
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────
 buildCarousel();
 updateStats();
+initSharedView();
 </script>
 </body>
 </html>
