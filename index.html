@@ -76,6 +76,7 @@
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
       align-items: center;
+      position: relative;
     }
     .btn {
       padding: 4px 12px;
@@ -96,6 +97,59 @@
     .btn-reset { border-color: #ffb3c6; color: #c9184a; }
     .btn-reset:hover { background: #c9184a; color: white; border-color: #c9184a; }
     .count-label { font-size: .72rem; color: var(--muted); font-weight: 600; }
+    .btn-more { display: none; margin-left: auto; letter-spacing: .05em; }
+    .overflow-menu {
+      position: absolute;
+      right: 12px;
+      top: calc(100% + 4px);
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(58,26,46,.15);
+      z-index: 50;
+      min-width: 160px;
+      overflow: hidden;
+    }
+    .overflow-menu.hidden { display: none; }
+    .overflow-menu-item {
+      display: block;
+      width: 100%;
+      padding: 10px 14px;
+      text-align: left;
+      border: none;
+      background: white;
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .overflow-menu-item:hover { background: var(--bg); }
+    .overflow-menu-item + .overflow-menu-item { border-top: 1px solid var(--border); }
+    .overflow-menu-item--danger { color: #c9184a; }
+    @media (max-width: 499px) {
+      #btnShare, #btnReset { display: none; }
+      .btn-more { display: block; }
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: var(--text);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 999px;
+      font-size: .8rem;
+      font-weight: 600;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .18s, transform .18s;
+      z-index: 200;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* ── Carousel wrapper ── */
     .carousel-wrapper {
@@ -412,8 +466,13 @@
   <button class="btn" data-filter="collected">Collected</button>
   <button class="btn" data-filter="needed">Needed</button>
   <span class="count-label" id="countLabel">0/209</span>
-  <button class="btn btn-share" id="btnShare">Share missing</button>
+  <button class="btn btn-share" id="btnShare">Share needed</button>
   <button class="btn btn-reset" id="btnReset">Reset</button>
+  <button class="btn btn-more" id="btnMore">···</button>
+  <div class="overflow-menu hidden" id="overflowMenu">
+    <button class="overflow-menu-item" id="menuShare">Share needed</button>
+    <button class="overflow-menu-item overflow-menu-item--danger" id="menuReset">Reset</button>
+  </div>
 </div>
 
 <div class="carousel-wrapper" id="carouselWrapper">
@@ -426,6 +485,8 @@
   <div class="nav-dots"    id="navDots"></div>
   <div class="nav-counter" id="navCounter"></div>
 </div>
+
+<div id="toast" class="toast"></div>
 
 <div id="shareOverlay" class="share-overlay hidden">
   <div class="share-modal">
@@ -710,7 +771,33 @@ document.getElementById("btnReset").addEventListener("click", () => {
   updateStats();
 });
 
-// ── Share missing ─────────────────────────────────────────────────────────
+// ── Overflow menu (small screens) ────────────────────────────────────────
+const overflowMenu = document.getElementById("overflowMenu");
+document.getElementById("btnMore").addEventListener("click", e => {
+  e.stopPropagation();
+  overflowMenu.classList.toggle("hidden");
+});
+document.getElementById("menuShare").addEventListener("click", () => {
+  overflowMenu.classList.add("hidden");
+  document.getElementById("btnShare").click();
+});
+document.getElementById("menuReset").addEventListener("click", () => {
+  overflowMenu.classList.add("hidden");
+  document.getElementById("btnReset").click();
+});
+document.addEventListener("click", () => overflowMenu.classList.add("hidden"));
+
+// ── Toast ────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+// ── Share needed ─────────────────────────────────────────────────────────
 function copyText(text) {
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
   const el = document.createElement("textarea");
@@ -728,11 +815,7 @@ document.getElementById("btnShare").addEventListener("click", () => {
   for (let n = 1; n <= 209; n++) if (!collected.has(n)) missing.push(n);
   const url = new URL(location.href);
   url.search = missing.length ? "?missing=" + missing.join(",") : "";
-  const btn = document.getElementById("btnShare");
-  copyText(url.toString()).then(() => {
-    btn.textContent = "Copied!";
-    setTimeout(() => btn.textContent = "Share missing", 2000);
-  });
+  copyText(url.toString()).then(() => showToast("Link copied!"));
 });
 
 // ── Shared view (read-only, never touches localStorage) ───────────────────
@@ -768,11 +851,7 @@ function initSharedView() {
                          .filter(n => missingSet.has(n));
       return cards.length ? [`${sec.name}: ${cards.join(", ")}`] : [];
     });
-    const btn = document.getElementById("shareCopyList");
-    copyText(lines.join("\n")).then(() => {
-      btn.textContent = "Copied!";
-      setTimeout(() => btn.textContent = "Copy list", 2000);
-    });
+    copyText(lines.join("\n")).then(() => showToast("List copied!"));
   });
 
   document.getElementById("shareClose").addEventListener("click", () => {
